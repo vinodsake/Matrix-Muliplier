@@ -37,14 +37,13 @@ NAME		:= fsm
 USERNAME	:= $(shell whoami)
 DIR_TMP		:= /tmp/$(USERNAME)verilog
 
-SRC_FILE = *.v
 COM = vcs
-COM_OPTS = -Mupdate -debug 
+COM_OPTS = -Mupdate -debug -sverilog 
 DVE_OPTS = -R -gui
 DEF_OPTS = -full64  
 VERDI_OPTS = -kdb -debug_access+all -lca
 LOG = -l $(NAME).logv
-
+FORMAT := verilog
 
 #----- Targets
 default:
@@ -80,8 +79,10 @@ sim_files :
 syn_files : 
 	$(shell find . \( -name '*.v' -o -name '*.sv' \) -prune ! -name '*tb*' -exec realpath "{}" \; > $(NAME).vfs)
 
+netlist_files :
+	$(shell find . \( -name '*_syn.*' -o -name '*tb*' \) -exec realpath "{}" \; > $(NAME).vfn)
 
-#----- Simulation. Put all files in a ".vfv" file.
+#----- Simulation. Put all hdl & testbench files in a ".vfv" file. Add only hdl files to .vfs
 compile : sim_files syn_files
 	$(COM) $(VERDI_OPTS) $(COM_OPTS) -f $(NAME).vfv $(DEF_OPTS) &
 
@@ -91,18 +92,22 @@ run:
 
 # Start viewer
 viewer:
-	$(COM) $(VERDI_OPTS) $(SRC_FILE) $(DEF_OPTS) &
+	$(COM) $(VERDI_OPTS) -f $(NAME).vfv $(DEF_OPTS) 
 
 #----- Synthesis. Put all files in a ".vfs" file.
-check:	compile
+check:	syn_files	
 	$(COM) $(VERDI_OPTS) $(COM_OPTS) -f $(NAME).vfs $(DEF_OPTS) &
+
+netlist_run: netlist_files
+	$(COM) $(VERDI_OPTS) $(COM_OPTS) -f $(NAME).vfn $(DEF_OPTS) -o simv_syn &
+	./simv $(LOG) $(CFLAGS)  &
 
 # Note: alternate top of file cmd instead of awk: sed '/BEFORE_ANALYZE_SEC.../q'
 dc-$(NAME).tcl: syn_files dc-template.tcl $(NAME).vfs Makefile
 	@echo "===== Making a new dc-$(NAME).tcl"
 	awk '/BEFORE_ANALYZE_SECTION/ {exit} {print}' dc-template.tcl | sed 's/prac/$(NAME)/' | sed 's/dc-template.tcl/dc-$(NAME).tcl/' > dc-$(NAME).tcl
-	grep -v '#' $(NAME).vfs | grep '.*\.v' | awk '{print "analyze -format verilog " $$1}' >> dc-$(NAME).tcl
-	awk '/AFTER_ANALYZE_SECTION/,EOF' dc-template.tcl | grep -v 'AFTER_ANALYZE_SECTION' | sed 's/prac/$(NAME)/' >> dc-$(NAME).tcl
+	grep -v '#' $(NAME).vfs | awk '{print "analyze -library WORK -format $(FORMAT) " $$1}' >> dc-$(NAME).tcl
+	awk '/AFTER_ANALYZE_SECTION/,EOF' dc-template.tcl | grep -v 'AFTER_ANALYZE_SECTION' | sed 's/prac/$(NAME)/' | sed 's/FORMAT/${FORMAT}/' >> dc-$(NAME).tcl
 	@echo "===== New dc-$(NAME).tcl ready"
 	@echo 
 
@@ -121,6 +126,7 @@ clean:
 	rm -f  vcs.key
 	rm -f  ncverilog.key
 	rm -rf simv.daidir/
+	rm -rf simv_syn.daidir/
 	rm -rf $(DIR_TMP)
 	rm -rf INCA_libs/
 	rm -rf csrc/
@@ -147,6 +153,9 @@ cleanall: clean
 	rm -f $(NAME)_test.trn
 	rm -f $(NAME).vpd
 	rm -f $(NAME).vfv
-	rm -rf ${NAME}.vfs
+	rm -f ${NAME}.vfs
+	rm -f ${NAME}.vfn
+	rm -rf ${NAME}_syn.v
 	rm -f command.log
+
 

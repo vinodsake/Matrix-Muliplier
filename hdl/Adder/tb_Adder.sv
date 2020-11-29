@@ -2,7 +2,7 @@
 * File Name	: tb_Adder.sv
 * Description 	: Verifying Half & Full Adder
 * Creation Date : 21-11-2020
-* Last Modified : Sat 21 Nov 2020 11:54:11 PM PST
+* Last Modified : Fri 27 Nov 2020 01:33:58 AM PST
 * Author 	: Vinod Sake
 * Email 	: vinodsake042@gmail.com
 * GitHub	: github.com/vinodsake
