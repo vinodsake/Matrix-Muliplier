@@ -1,26 +1,3 @@
-# Makefile for synthesis and checking
-#
-# 2018/02/15  Generation of dc-$(NAME).tcl completely re-written so the file
-#             is automatically generated from the *.vfs file
-# 2017/01/31  Many big changes to merge simulation and synthesis,
-#             auto generate dc-$(NAME).tcl file, etc.
-# 2016/01/27  Small tweaks for NCVerilog
-# 2009/02/12  Lots of updates for new script tcl version
-# 2006/01/30  Minor changes
-# 2005/02/10  A number of improvements thanks to Eric Work
-# 2004/02/04  Updated
-# 2003/05/27  Added "tee" to save log file.  Make sure you add "exit" at the
-#             end of your dc_compile script.
-# 2003/05/14  Written
-#
-# A few notes on writing a Makefile and running it
-#  - Make sure commands are preceded by a "tab"; spaces will not work!
-#  - You may also add dependencies so that a command will execute only
-#    if the dependency has been updated more recently than the target
-#    (name the target with the same name as the output of the command(s)).
-#  - Use a "-n" flag to see what make will use without running the
-#    command(s).  Ex: "make -n clean"
-#
 # Notes for vcs:
 #  -Mdir     Temporary file space; can give a big speedup
 #  -Mupdate  Incremental compile
@@ -31,16 +8,18 @@
 
 
 #----- Set the top-level module name here
-NAME		:= fsm
+NAME		:= module_name
 
 #----- Some variables
 USERNAME	:= $(shell whoami)
 DIR_TMP		:= /tmp/$(USERNAME)verilog
 
 COM = vcs
-COM_OPTS = -Mupdate -debug -sverilog 
+COM_OPTS = -Mupdate -pp -debug -sverilog 
 DVE_OPTS = -R -gui
+VERDI = verdi
 DEF_OPTS = -full64  
+INC_DIR = +incdir+../common/+../1bit_adder/+../nbit_adder/
 VERDI_OPTS = -kdb -debug_access+all -lca
 LOG = -l $(NAME).logv
 FORMAT := verilog
@@ -54,7 +33,7 @@ default:
 	@echo "  make clean               deletes some generated files"
 	@echo "  make cleanall            deletes all generated files"
 	@echo "Make targets for simulation"
-	@echo "  make compile             compile only with .vfv and vcs"
+	@echo "  make compile             compile only with .vfv and vcs	(make compile NAME=<module> CFLAGS=+debug)"
 	@echo "  make run                 run with vcs"
 	@echo "  make viewer              start verdi"
 	@echo "Make targets for synthesis"
@@ -73,6 +52,7 @@ default:
 	@echo "  3) 'make NAME=xyz synth'"
 	@echo
 
+#Disabled .vfv file generation.
 sim_files :
 	$(shell find . \( -name '*.v' -o -name '*.sv' \) -exec realpath "{}" \; > $(NAME).vfv)
 
@@ -83,16 +63,19 @@ netlist_files :
 	$(shell find . \( -name '*_syn.*' -o -name '*tb*' \) -exec realpath "{}" \; > $(NAME).vfn)
 
 #----- Simulation. Put all hdl & testbench files in a ".vfv" file. Add only hdl files to .vfs
-compile : sim_files syn_files
-	$(COM) $(VERDI_OPTS) $(COM_OPTS) -f $(NAME).vfv $(DEF_OPTS) &
+compile : 
+	$(COM) $(VERDI_OPTS) $(COM_OPTS) $(INC_DIR) -f $(NAME).vfv $(DEF_OPTS) &
 
 # Run simulation in VCS 
 run:
 	./simv $(LOG) $(CFLAGS)  &
 
 # Start viewer
-viewer:
-	$(COM) $(VERDI_OPTS) -f $(NAME).vfv $(DEF_OPTS) 
+verdi:
+	./simv -verdi &
+	#$(VERDI) $(VERDI_OPTS) $(INC_DIR) -f $(NAME).vfv $(DEF_OPTS) & 
+dve:
+	$(COM) $(DVE_OPTS) $(COM_OPTS) $(DEF_OPTS) $(INC_DIR) -f $(NAME).vfv &
 
 #----- Synthesis. Put all files in a ".vfs" file.
 check:	syn_files	
@@ -152,10 +135,15 @@ cleanall: clean
 	rm -f $(NAME)_test.dsn
 	rm -f $(NAME)_test.trn
 	rm -f $(NAME).vpd
-	rm -f $(NAME).vfv
-	rm -f ${NAME}.vfs
+	#rm -f $(NAME).vfv
+	#rm -f ${NAME}.vfs
 	rm -f ${NAME}.vfn
 	rm -rf ${NAME}_syn.v
 	rm -f command.log
+	rm -rf DVEfiles/
+	rm -rf .saveDVEfiles/
+	rm -f *.vpd
+	rm -f .restartSimSession.tcl.old
+	rm -f .synopsys_dve_rebuild.tcl
 
 

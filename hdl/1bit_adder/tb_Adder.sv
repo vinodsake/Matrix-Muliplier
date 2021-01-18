@@ -2,7 +2,7 @@
 * File Name	: tb_Adder.sv
 * Description 	: Verifying Half & Full Adder
 * Creation Date : 21-11-2020
-* Last Modified : Fri 27 Nov 2020 01:33:58 AM PST
+* Last Modified : Sat Jan 16 20:37:08 2021
 * Author 	: Vinod Sake
 * Email 	: vinodsake042@gmail.com
 * GitHub	: github.com/vinodsake
@@ -43,7 +43,7 @@ module tb_Adder;
 
 	always @ (A,B,Cin) begin
 		score_board(A, B, Cin, ha_Sum_sb, ha_Cout_sb, fa_Sum_sb, fa_Cout_sb);
-		#1;	//wait for aoutput to propagate
+		#1;	//wait for output to propagate
 		check(ha_Sum, ha_Cout, fa_Sum, fa_cout,
 			ha_Sum_sb, ha_Cout_sb, fa_Sum_sb, fa_Cout_sb, error);	
 		if($test$plusargs("debug")) begin

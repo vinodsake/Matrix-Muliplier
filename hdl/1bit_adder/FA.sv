@@ -2,12 +2,11 @@
 * File Name	: FA.sv
 * Description 	: Full Adder using Half Adders
 * Creation Date : 27-11-2020
-* Last Modified : Sat 28 Nov 2020 11:36:40 AM PST
+* Last Modified : Sat 16 Jan 2021 11:42:03 PM PST
 * Author 	: Vinod Sake
 * Email 	: vinodsake042@gmail.com
 * GitHub	: github.com/vinodsake
 **********************************************************************/
-`celldefine
 module FA (
         input   A,
         input   B,
@@ -23,4 +22,3 @@ module FA (
 	assign Sum = ha2_sum;
 	assign Cout = ha2_cout | ha1_cout;
 endmodule
-`endcelldefine
